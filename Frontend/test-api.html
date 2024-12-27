@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #007BFF;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        table th {
+            background-color: #007BFF;
+            color: white;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .buttons {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Book Management System</h1>
+    <div class="container">
+        <h2>Manage Books</h2>
+
+        <!-- Book Form -->
+        <form id="bookForm">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" required>
+            </div>
+            <div class="form-group">
+                <label for="publishedYear">Published Year:</label>
+                <input type="number" id="publishedYear" name="publishedYear" required>
+            </div>
+            <div class="form-group">
+                <label for="isbn">ISBN:</label>
+                <input type="text" id="isbn" name="isbn" required>
+            </div>
+            <div class="buttons">
+                <button type="submit" id="submitButton">Add Book</button>
+            </div>
+        </form>
+
+        <!-- Book Table -->
+        <table id="bookTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Published Year</th>
+                    <th>ISBN</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Books will be dynamically populated here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const apiUrl = "http://localhost:8080/api/books";
+        const bookTable = document.getElementById("bookTable").querySelector("tbody");
+        const bookForm = document.getElementById("bookForm");
+        const submitButton = document.getElementById("submitButton");
+        let editingBookId = null;
+
+        // Fetch and display books
+        function fetchBooks() {
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    bookTable.innerHTML = ""; // Clear existing rows
+                    data.forEach(book => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${book.id}</td>
+                            <td>${book.title}</td>
+                            <td>${book.author}</td>
+                            <td>${book.publishedYear}</td>
+                            <td>${book.isbn}</td>
+                            <td>
+                                <button onclick="editBook(${book.id})">Edit</button>
+                                <button onclick="deleteBook(${book.id})">Delete</button>
+                            </td>
+                        `;
+                        bookTable.appendChild(row);
+                    });
+                })
+                .catch(error => console.error("Error fetching books:", error));
+        }
+
+        // Add or update a book
+        bookForm.addEventListener("submit", event => {
+            event.preventDefault();
+            const formData = new FormData(bookForm);
+            const bookData = Object.fromEntries(formData);
+
+            if (editingBookId) {
+                // Update existing book
+                fetch(`${apiUrl}/${editingBookId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(bookData)
+                })
+                    .then(fetchBooks)
+                    .catch(error => console.error("Error updating book:", error));
+                editingBookId = null;
+                submitButton.textContent = "Add Book";
+            } else {
+                // Add new book
+                fetch(apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(bookData)
+                })
+                    .then(fetchBooks)
+                    .catch(error => console.error("Error adding book:", error));
+            }
+
+            bookForm.reset();
+        });
+
+        // Edit book
+        window.editBook = function (id) {
+            fetch(`${apiUrl}/${id}`)
+                .then(response => response.json())
+                .then(book => {
+                    document.getElementById("title").value = book.title;
+                    document.getElementById("author").value = book.author;
+                    document.getElementById("publishedYear").value = book.publishedYear;
+                    document.getElementById("isbn").value = book.isbn;
+                    editingBookId = id;
+                    submitButton.textContent = "Update Book";
+                })
+                .catch(error => console.error("Error fetching book:", error));
+        };
+
+        // Delete book
+        window.deleteBook = function (id) {
+            fetch(`${apiUrl}/${id}`, { method: "DELETE" })
+                .then(fetchBooks)
+                .catch(error => console.error("Error deleting book:", error));
+        };
+
+        // Initial fetch
+        fetchBooks();
+    </script>
+</body>
+</html>
