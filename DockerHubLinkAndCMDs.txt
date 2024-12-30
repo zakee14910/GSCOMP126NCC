@@ -1,0 +1,22 @@
+DockerHub Link : https://hub.docker.com/repository/docker/zakee14910/library-system/general
+
+
+## Running MySQL Container
+To start a MySQL container:
+```bash
+docker run --name mysql-container \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=librarydb \
+  -p 3306:3306 \
+  -d mysql:latest
+```
+
+## Running the Library System Container
+To run the application container and link it with MySQL:
+```bash
+docker run --name library-system-container \
+  -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/librarydb \
+  -e SPRING_DATASOURCE_USERNAME=root \
+  -e SPRING_DATASOURCE_PASSWORD=root \
+  -d zakee14910/library-system:latest
